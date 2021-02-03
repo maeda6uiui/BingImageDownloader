@@ -56,7 +56,9 @@ Images are downloaded and then archived under the *Archive* directory. Each subd
 | --no_format_images         | Images are not formatted if set                              |                |
 | --no_archive_images        | Images are not archived if set                               |                |
 
-## Acknowledgements
+## Comments
 
 Large part of [downloader.py](./downloader.py) is derived from [gurugaurav/bing_image_downloader](https://github.com/gurugaurav/bing_image_downloader). Please check out [the license for the original project](https://github.com/gurugaurav/bing_image_downloader/blob/master/LICENSE).
+
+The specs of search engines are subject to change, and this project may not work after such change.
 
