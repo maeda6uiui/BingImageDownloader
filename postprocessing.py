@@ -15,7 +15,7 @@ def format_images(
     format_images resizes images and converts them to JPEG.
     Invalid images are removed.
     """
-    pathname=os.path.join(target_dir,"**","*[!txt]")
+    pathname=os.path.join(target_dir,"*[!txt]")
     files=glob.glob(pathname)
 
     for file in files:
