@@ -7,7 +7,7 @@ default_logger=logging.getLogger(__name__)
 default_logger.setLevel(level=logging.INFO)
 
 def format_images(
-    save_root_dir:str,
+    target_dir:str,
     image_width:int,
     image_height:int,
     logger:logging.Logger=default_logger):
@@ -15,7 +15,7 @@ def format_images(
     format_images resizes images and converts them to JPEG.
     Invalid images are removed.
     """
-    pathname=os.path.join(save_root_dir,"**","*[!txt]")
+    pathname=os.path.join(target_dir,"**","*[!txt]")
     files=glob.glob(pathname)
 
     for file in files:
