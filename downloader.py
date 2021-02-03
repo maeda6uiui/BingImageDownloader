@@ -48,7 +48,7 @@ class BingImageDownloader:
         image=urllib.request.urlopen(request,timeout=self.timeout).read()
 
         if not imghdr.what(None,image):
-            self.logger.error("Invalid image [{}]".format(link))
+            raise RuntimeError("Invalid image")
         else:
             with open(save_filepath,"wb") as f:
                 f.write(image)
