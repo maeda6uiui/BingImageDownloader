@@ -86,8 +86,8 @@ def main(args):
     save_root_dir:str=args.save_root_dir
     workers_log_dir:str=args.workers_log_dir
     archive_save_dir:str=args.archive_save_dir
-    overwrite:bool=args.overwrite
     archive_format:str=args.archive_format
+    overwrite:bool=args.overwrite
     num_keywords_per_archive:int=args.num_keywords_per_archive
     progress_log_filepath:str=args.progress_log_filepath
     index_lower_bound:int=args.index_lower_bound
@@ -191,10 +191,10 @@ if __name__=="__main__":
     parser.add_argument("--timeout",type=int,default=60)
     parser.add_argument("--filters",type=str,default="")
     parser.add_argument("--save_root_dir",type=str,default="./Image")
-    parser.add_argument("--workers_log_dir",type=str,default="./WorkerLog")
+    parser.add_argument("--workers_log_dir",type=str,default="./WorkersLog")
     parser.add_argument("--archive_save_dir",type=str,default="./Archive")
-    parser.add_argument("--overwrite",action="store_true")
     parser.add_argument("--archive_format",type=str,default="gztar")
+    parser.add_argument("--overwrite",action="store_true")
     parser.add_argument("--num_keywords_per_archive",type=int,default=100)
     parser.add_argument("--progress_log_filepath",type=str,default="./progress.txt")
     parser.add_argument("--index_lower_bound",type=int,default=0)
