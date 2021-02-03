@@ -123,7 +123,7 @@ def main(args):
         progress_logger.info("Batch start index: {}".format(idx))
 
         #Download
-        batch_keywords=keywords[index_lower_bound:index_lower_bound+num_keywords_per_archive]
+        batch_keywords=keywords[idx:idx+num_keywords_per_archive]
         subbatch_keywords=list(split_list(batch_keywords,num_downloader_processes))
 
         downloader_processes:List[multiprocessing.Process]=[]
