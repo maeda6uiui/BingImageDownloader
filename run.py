@@ -1,59 +1,43 @@
+#!python3.6
 import argparse
 import glob
+import hashlib
 import logging
 import multiprocessing
 import os
 import shutil
 import sys
-from typing import Any, List
+from icrawler.builtin import BingImageCrawler
+from typing import Any,List
 
 sys.path.append(".")
-from downloader import BingImageDownloader
 from postprocessing import format_images
 
-logging_fmt="%(asctime)s %(levelname)s: %(message)s"
+logging_fmt = "%(asctime)s %(levelname)s: %(message)s"
+logging.basicConfig(format=logging_fmt)
 
-def downloader_worker(**kwargs):
-    keywords:List[str]=kwargs["keywords"]
-    limit:int=kwargs["limit"]
-    safe_search:bool=kwargs["safe_search"]
-    timeout:int=kwargs["timeout"]
-    filters:str=kwargs["filters"]
-    save_root_dir:str=kwargs["save_root_dir"]
-    workers_log_dir:str=kwargs["workers_log_dir"]
-    worker_index:int=kwargs["worker_index"]
+def get_md5_hash(keyword:str)->str:
+    return hashlib.md5(keyword.encode()).hexdigest()
 
-    downloader_log_filepath=os.path.join(workers_log_dir,"downloader_log_{}.txt".format(worker_index))
-    downloader_logger=logging.getLogger("downloader_logger_{}".format(worker_index))
-    downloader_logger.setLevel(level=logging.INFO)
-    handler=logging.FileHandler(downloader_log_filepath,"a",encoding="utf_8")
-    handler.setLevel(logging.INFO)
-    handler.setFormatter(logging.Formatter(logging_fmt))
-    downloader_logger.addHandler(handler)
+def split_list(l:List[Any],n:int):
+    for i in range(n):
+        yield l[i*len(l)//n:(i+1)*len(l)//n]
 
-    progress_log_filepath=os.path.join(workers_log_dir,"progress_log_{}.txt".format(worker_index))
-    progress_logger=logging.getLogger("progress_logger_{}".format(worker_index))
-    progress_logger.setLevel(level=logging.INFO)
-    handler=logging.FileHandler(progress_log_filepath,"a",encoding="utf_8")
-    handler.setLevel(logging.INFO)
-    handler.setFormatter(logging.Formatter(logging_fmt))
-    progress_logger.addHandler(handler)
-
-    for idx,keyword in enumerate(keywords):
-        progress_logger.info("{}\t{}".format(idx,keyword))
-
-        downloader=BingImageDownloader(
-            keyword,
-            limit,
-            save_root_dir,
-            safe_search,
-            timeout,
-            filters,
-            logger=downloader_logger
-        )
-        downloader.run()
-
-    progress_logger.info("====================")
+def crawl_images(
+    keyword:str,
+    limit:int,
+    save_dir:str,
+    feeder_threads:int,
+    parser_threads:int,
+    downloader_threads:int):
+    crawler=BingImageCrawler(
+        feeder_threads=feeder_threads,
+        parser_threads=parser_threads,
+        downloader_threads=downloader_threads,
+        log_level=logging.ERROR,
+        storage={"root_dir":save_dir},
+    )
+    crawler.crawl(keyword=keyword,max_num=limit)
 
 def formatter_worker(**kwargs):
     target_dirs:List[str]=kwargs["target_dirs"]
@@ -73,38 +57,38 @@ def formatter_worker(**kwargs):
     for target_dir in target_dirs:
         format_images(target_dir,image_width,image_height,logger=formatter_logger)
 
-def split_list(l:List[Any],n:int):
-    for i in range(n):
-        yield l[i*len(l)//n:(i+1)*len(l)//n]
+def archive_images(
+    archive_filepath:str,
+    archive_format:str,
+    save_root_dir:str):
+    shutil.make_archive(archive_filepath,archive_format,base_dir=save_root_dir)
+    shutil.rmtree(save_root_dir)
 
 def main(args):
     keywords_filepath:str=args.keywords_filepath
     limit:int=args.limit
-    disable_safe_search:bool=args.disable_safe_search
-    timeout:int=args.timeout
-    filters:str=args.filters
+    image_width:int=args.image_width
+    image_height:int=args.image_height
     save_root_dir:str=args.save_root_dir
     workers_log_dir:str=args.workers_log_dir
     archive_save_dir:str=args.archive_save_dir
     archive_format:str=args.archive_format
     overwrite:bool=args.overwrite
-    num_keywords_per_archive:int=args.num_keywords_per_archive
     progress_log_filepath:str=args.progress_log_filepath
     index_lower_bound:int=args.index_lower_bound
     index_upper_bound:int=args.index_upper_bound
-    num_downloader_processes:int=args.num_downloader_processes
+    feeder_threads:int=args.feeder_threads
+    parser_threads:int=args.parser_threads
+    downloader_threads:int=args.downloader_threads
     num_formatter_processes:int=args.num_formatter_processes
-    image_width:int=args.image_width
-    image_height:int=args.image_height
+    num_keywords_per_archive:int=args.num_keywords_per_archive
     no_format_images:bool=args.no_format_images
     no_archive_images:bool=args.no_archive_images
 
     os.makedirs(save_root_dir,exist_ok=overwrite)
     os.makedirs(workers_log_dir,exist_ok=overwrite)
-    if not no_archive_images:
-        os.makedirs(archive_save_dir,exist_ok=overwrite)
 
-    progress_logger=logging.getLogger(__name__)
+    progress_logger=logging.getLogger("progress_loggger")
     progress_logger.setLevel(level=logging.INFO)
     handler=logging.FileHandler(progress_log_filepath,"a",encoding="utf_8")
     handler.setLevel(logging.INFO)
@@ -118,35 +102,24 @@ def main(args):
 
     if index_upper_bound<0:
         index_upper_bound=len(keywords)
-    
+
     for idx in range(index_lower_bound,index_upper_bound,num_keywords_per_archive):
         progress_logger.info("Batch start index: {}".format(idx))
 
         #Download
         batch_keywords=keywords[idx:idx+num_keywords_per_archive]
-        subbatch_keywords=list(split_list(batch_keywords,num_downloader_processes))
+        for i,keyword in enumerate(batch_keywords):
+            progress_logger.info("{}\t{}".format(idx+i,keyword))
 
-        downloader_processes:List[multiprocessing.Process]=[]
-        for i in range(num_downloader_processes):
-            kwargs={
-                "keywords":subbatch_keywords[i],
-                "limit":limit,
-                "safe_search":not disable_safe_search,
-                "timeout":timeout,
-                "filters":filters,
-                "save_root_dir":save_root_dir,
-                "workers_log_dir":workers_log_dir,
-                "worker_index":i
-            }
-            downloader_process=multiprocessing.Process(target=downloader_worker,kwargs=kwargs)
-            downloader_processes.append(downloader_process)
+            title_hash=get_md5_hash(keyword)
+            save_dir=os.path.join(save_root_dir,title_hash)
+            os.makedirs(save_dir,exist_ok=True)
 
-            progress_logger.info("Sub batch #{}\t{}".format(i,subbatch_keywords[i]))
+            info_filepath=os.path.join(save_dir,"info.txt")
+            with open(info_filepath,"w",encoding="utf_8") as w:
+                w.write("{}\n".format(keyword))
 
-        for downloader_process in downloader_processes:
-            downloader_process.start()
-        for downloader_process in downloader_processes:
-            downloader_process.join()
+            crawl_images(keyword,limit,save_dir,feeder_threads,parser_threads,downloader_threads)
 
         #Format
         if not no_format_images:
@@ -180,29 +153,28 @@ def main(args):
             shutil.rmtree(save_root_dir)
 
             progress_logger.info("Created an archive file {}".format(archive_filepath))
-        
+
         progress_logger.info("====================")
 
 if __name__=="__main__":
     parser=argparse.ArgumentParser()
     parser.add_argument("--keywords_filepath",type=str,default="./keywords.txt")
     parser.add_argument("--limit",type=int,default=200)
-    parser.add_argument("--disable_safe_search",action="store_true")
-    parser.add_argument("--timeout",type=int,default=60)
-    parser.add_argument("--filters",type=str,default="")
+    parser.add_argument("--image_width",type=int,default=256)
+    parser.add_argument("--image_height",type=int,default=256)
     parser.add_argument("--save_root_dir",type=str,default="./Image")
     parser.add_argument("--workers_log_dir",type=str,default="./WorkersLog")
     parser.add_argument("--archive_save_dir",type=str,default="./Archive")
     parser.add_argument("--archive_format",type=str,default="gztar")
     parser.add_argument("--overwrite",action="store_true")
-    parser.add_argument("--num_keywords_per_archive",type=int,default=100)
     parser.add_argument("--progress_log_filepath",type=str,default="./progress.txt")
     parser.add_argument("--index_lower_bound",type=int,default=0)
     parser.add_argument("--index_upper_bound",type=int,default=-1)
-    parser.add_argument("--num_downloader_processes",type=int,default=5)
+    parser.add_argument("--feeder_threads",type=int,default=4)
+    parser.add_argument("--parser_threads",type=int,default=4)
+    parser.add_argument("--downloader_threads",type=int,default=8)
     parser.add_argument("--num_formatter_processes",type=int,default=5)
-    parser.add_argument("--image_width",type=int,default=256)
-    parser.add_argument("--image_height",type=int,default=256)
+    parser.add_argument("--num_keywords_per_archive",type=int,default=100)
     parser.add_argument("--no_format_images",action="store_true")
     parser.add_argument("--no_archive_images",action="store_true")
     args=parser.parse_args()
