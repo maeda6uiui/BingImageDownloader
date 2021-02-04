@@ -26,7 +26,7 @@ Fukuzawa Yukichi
 Run
 
 ```shell
-py run.py
+python3 run.py
 ```
 
 Images are downloaded and then archived under the *Archive* directory. Each subdirectory is named according to the MD5 hash value of the keyword and *info.txt* contains the original keyword.
