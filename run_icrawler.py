@@ -173,7 +173,7 @@ if __name__=="__main__":
     parser.add_argument("--feeder_threads",type=int,default=4)
     parser.add_argument("--parser_threads",type=int,default=4)
     parser.add_argument("--downloader_threads",type=int,default=8)
-    parser.add_argument("--num_formatter_processes",type=int,default=4)
+    parser.add_argument("--num_formatter_processes",type=int,default=5)
     parser.add_argument("--num_keywords_per_archive",type=int,default=100)
     parser.add_argument("--no_format_images",action="store_true")
     parser.add_argument("--no_archive_images",action="store_true")
