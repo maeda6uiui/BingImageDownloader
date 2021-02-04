@@ -111,7 +111,6 @@ def main(args):
         for i,keyword in enumerate(batch_keywords):
             progress_logger.info("{}\t{}".format(idx+i,keyword))
 
-        for keyword in batch_keywords:
             title_hash=get_md5_hash(keyword)
             save_dir=os.path.join(save_root_dir,title_hash)
             os.makedirs(save_dir,exist_ok=True)
