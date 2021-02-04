@@ -25,7 +25,7 @@ def split_list(l:List[Any],n:int):
 
 def crawl_images(
     keyword:str,
-    limit:int,
+    max_num_images:int,
     save_dir:str,
     feeder_threads:int,
     parser_threads:int,
@@ -37,25 +37,15 @@ def crawl_images(
         log_level=logging.ERROR,
         storage={"root_dir":save_dir},
     )
-    crawler.crawl(keyword=keyword,max_num=limit)
+    crawler.crawl(keyword=keyword,max_num=max_num_images)
 
 def formatter_worker(**kwargs):
     target_dirs:List[str]=kwargs["target_dirs"]
-    workers_log_dir:str=kwargs["workers_log_dir"]
-    worker_index:int=kwargs["worker_index"]
     image_width:int=kwargs["image_width"]
     image_height:int=kwargs["image_height"]
 
-    formatter_log_filepath=os.path.join(workers_log_dir,"formatter_log_{}.txt".format(worker_index))
-    formatter_logger=logging.getLogger("formatter_logger_{}".format(worker_index))
-    formatter_logger.setLevel(level=logging.INFO)
-    handler=logging.FileHandler(formatter_log_filepath,"a",encoding="utf_8")
-    handler.setLevel(logging.INFO)
-    handler.setFormatter(logging.Formatter(logging_fmt))
-    formatter_logger.addHandler(handler)
-
     for target_dir in target_dirs:
-        format_images(target_dir,image_width,image_height,logger=formatter_logger)
+        format_images(target_dir,image_width,image_height)
 
 def archive_images(
     archive_filepath:str,
@@ -66,11 +56,10 @@ def archive_images(
 
 def main(args):
     keywords_filepath:str=args.keywords_filepath
-    limit:int=args.limit
+    max_num_images:int=args.max_num_images
     image_width:int=args.image_width
     image_height:int=args.image_height
     save_root_dir:str=args.save_root_dir
-    workers_log_dir:str=args.workers_log_dir
     archive_save_dir:str=args.archive_save_dir
     archive_format:str=args.archive_format
     overwrite:bool=args.overwrite
@@ -86,7 +75,7 @@ def main(args):
     no_archive_images:bool=args.no_archive_images
 
     os.makedirs(save_root_dir,exist_ok=overwrite)
-    os.makedirs(workers_log_dir,exist_ok=overwrite)
+    os.makedirs(archive_save_dir,exist_ok=overwrite)
 
     progress_logger=logging.getLogger("progress_loggger")
     progress_logger.setLevel(level=logging.INFO)
@@ -119,7 +108,7 @@ def main(args):
             with open(info_filepath,"w",encoding="utf_8") as w:
                 w.write("{}\n".format(keyword))
 
-            crawl_images(keyword,limit,save_dir,feeder_threads,parser_threads,downloader_threads)
+            crawl_images(keyword,max_num_images,save_dir,feeder_threads,parser_threads,downloader_threads)
 
         #Format
         if not no_format_images:
@@ -130,8 +119,6 @@ def main(args):
             for i in range(num_formatter_processes):
                 kwargs={
                     "target_dirs":subbatch_subdirs[i],
-                    "workers_log_dir":workers_log_dir,
-                    "worker_index":i,
                     "image_width":image_width,
                     "image_height":image_height
                 }
@@ -159,11 +146,10 @@ def main(args):
 if __name__=="__main__":
     parser=argparse.ArgumentParser()
     parser.add_argument("--keywords_filepath",type=str,default="./keywords.txt")
-    parser.add_argument("--limit",type=int,default=200)
+    parser.add_argument("--max_num_images",type=int,default=200)
     parser.add_argument("--image_width",type=int,default=256)
     parser.add_argument("--image_height",type=int,default=256)
     parser.add_argument("--save_root_dir",type=str,default="./Image")
-    parser.add_argument("--workers_log_dir",type=str,default="./WorkersLog")
     parser.add_argument("--archive_save_dir",type=str,default="./Archive")
     parser.add_argument("--archive_format",type=str,default="gztar")
     parser.add_argument("--overwrite",action="store_true")
@@ -173,7 +159,7 @@ if __name__=="__main__":
     parser.add_argument("--feeder_threads",type=int,default=4)
     parser.add_argument("--parser_threads",type=int,default=4)
     parser.add_argument("--downloader_threads",type=int,default=8)
-    parser.add_argument("--num_formatter_processes",type=int,default=5)
+    parser.add_argument("--num_formatter_processes",type=int,default=4)
     parser.add_argument("--num_keywords_per_archive",type=int,default=100)
     parser.add_argument("--no_format_images",action="store_true")
     parser.add_argument("--no_archive_images",action="store_true")
