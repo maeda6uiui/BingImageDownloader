@@ -79,14 +79,14 @@ def main(args):
 
     progress_logger=logging.getLogger("progress_loggger")
     progress_logger.setLevel(level=logging.INFO)
-    handler=logging.FileHandler(progress_log_filepath,"a",encoding="utf_8")
+    handler=logging.FileHandler(progress_log_filepath,"a",encoding="utf-8")
     handler.setLevel(logging.INFO)
     handler.setFormatter(logging.Formatter(logging_fmt))
     progress_logger.addHandler(handler)
 
     progress_logger.info(args)
 
-    with open(keywords_filepath,"r",encoding="utf_8") as r:
+    with open(keywords_filepath,"r",encoding="utf-8") as r:
         keywords=r.read().splitlines()
 
     if index_upper_bound<0:
@@ -105,7 +105,7 @@ def main(args):
             os.makedirs(save_dir,exist_ok=True)
 
             info_filepath=os.path.join(save_dir,"info.txt")
-            with open(info_filepath,"w",encoding="utf_8") as w:
+            with open(info_filepath,"w",encoding="utf-8") as w:
                 w.write("{}\n".format(keyword))
 
             crawl_images(keyword,max_num_images,save_dir,feeder_threads,parser_threads,downloader_threads)
