@@ -5,6 +5,7 @@ import hashlib
 import logging
 import multiprocessing
 import os
+import pathlib
 import shutil
 import sys
 from icrawler.builtin import BingImageCrawler
@@ -136,7 +137,16 @@ def main(args):
             batch_end_index=min(idx+num_keywords_per_archive,index_upper_bound)
             archive_filepath=os.path.join(archive_save_dir,"images_{}_{}".format(batch_start_index,batch_end_index))
 
-            shutil.make_archive(archive_filepath,archive_format,base_dir=save_root_dir)
+            save_root_dir_path=pathlib.Path(save_root_dir)
+            archive_root_dir=str(save_root_dir_path.parent)
+            archive_base_dir=save_root_dir_path.name
+
+            shutil.make_archive(
+                archive_filepath,
+                archive_format,
+                root_dir=archive_root_dir,
+                base_dir=archive_base_dir
+            )
             shutil.rmtree(save_root_dir)
 
             progress_logger.info("Created an archive file {}".format(archive_filepath))
