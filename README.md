@@ -2,6 +2,9 @@
 
 Download images in bulk from Bing image search
 
+This project is intended to be run on Google Colaboratory.
+See the [Colab Notebook](./BingImageDownloaderSample.ipynb) to learn about basic usage.
+
 ## Usage
 
 Clone this repository
@@ -11,22 +14,20 @@ git clone https://github.com/maeda6uiui/BingImageDownloader
 cd BingImageDownloader
 ```
 
-Create a text file enumerating your keywords and save it as *keywords.txt*
-
-```
-Bee-eater
-The Shepherd's Crown
-Sharad Purnima
-Commondale
-Polkovnik
-Crunchyroll Anime Awards
-Fukuzawa Yukichi
-```
-
 Install **icrawler**
 
 ```
 pip install icrawler
+```
+
+Create a text file enumerating your keywords and save it as *keywords.txt*
+
+```
+Bee-eater
+Sharad Purnima
+Commondale
+Polkovnik
+Crunchyroll Anime Awards
 ```
 
 Run
